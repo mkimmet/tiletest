@@ -93,28 +93,27 @@ const config = {
     this.physics.add.collider(player, player2);
     // Create the player's walking animations from the texture atlas. These are stored in the global
     // animation manager so any sprite can access them.
-    const anims = this.anims;
-    anims.create({
+    this.anims.create({
       key: "misa-left-walk",
-      frames: anims.generateFrameNames("atlas", { prefix: "misa-left-walk.", start: 0, end: 3, zeroPad: 3 }),
+      frames: this.anims.generateFrameNames("atlas", { prefix: "misa-left-walk.", start: 0, end: 3, zeroPad: 3 }),
       frameRate: 10,
       repeat: -1
     });
-    anims.create({
+    this.anims.create({
       key: "misa-right-walk",
-      frames: anims.generateFrameNames("atlas", { prefix: "misa-right-walk.", start: 0, end: 3, zeroPad: 3 }),
+      frames: this.anims.generateFrameNames("atlas", { prefix: "misa-right-walk.", start: 0, end: 3, zeroPad: 3 }),
       frameRate: 10,
       repeat: -1
     });
-    anims.create({
-      key: "misa-front-walk",
-      frames: anims.generateFrameNames("atlas", { prefix: "misa-front-walk.", start: 0, end: 3, zeroPad: 3 }),
+    this.anims.create({
+      key: "misa-down-walk",
+      frames: this.anims.generateFrameNames("atlas", { prefix: "misa-front-walk.", start: 0, end: 3, zeroPad: 3 }),
       frameRate: 10,
       repeat: -1
     });
-    anims.create({
-      key: "misa-back-walk",
-      frames: anims.generateFrameNames("atlas", { prefix: "misa-back-walk.", start: 0, end: 3, zeroPad: 3 }),
+    this.anims.create({
+      key: "misa-up-walk",
+      frames: this.anims.generateFrameNames("atlas", { prefix: "misa-back-walk.", start: 0, end: 3, zeroPad: 3 }),
       frameRate: 10,
       repeat: -1
     });
@@ -261,9 +260,9 @@ const config = {
     } else if (cursors.right.isDown) {
       player.anims.play("misa-right-walk", true);
     } else if (cursors.up.isDown) {
-      player.anims.play("misa-back-walk", true);
+      player.anims.play("misa-up-walk", true);
     } else if (cursors.down.isDown) {
-      player.anims.play("misa-front-walk", true);
+      player.anims.play("misa-down-walk", true);
     } else {
       player.anims.stop();
   
@@ -297,12 +296,32 @@ getTileID = function(x,y){
 };
 
 handleClick = function(pointer){
+  var startPoint = Movement.GetStartPoint(player);
+  console.log("start point");
+    console.log(startPoint);
+
     var x = camera.scrollX + pointer.x;
     var y = camera.scrollY + pointer.y;
     var toX = Math.floor(x/8);
     var toY = Math.floor(y/8);
     var fromX = Math.floor(player.x/8);
     var fromY = Math.floor(player.y/8);
+
+    console.log("end point");
+    console.log(x,y);
+
+    var distance = Phaser.Math.Distance.Between(x,y,startPoint.x,startPoint.y);
+    console.log("distance ", distance);
+
+    //figure out the angle of the movement
+    var angle = Phaser.Math.RadToDeg(Phaser.Math.Angle.Between(x,y,startPoint.x,startPoint.y));
+    console.log("angle",angle);
+
+    var direction = Movement.GetDirection(x,y,startPoint.x,startPoint.y,angle);
+    console.log("direcion", direction);
+
+    var duration = Movement.GetDuration(.15,direction, distance, 1.5);
+    console.log("duration", duration);
 
     let pathLine = new Phaser.Curves.Line(new Phaser.Math.Vector2(player.x, player.y), new Phaser.Math.Vector2(pointer.x,pointer.y));
     console.log("Points on Line");
@@ -324,19 +343,40 @@ handleClick = function(pointer){
     }
     console.log(endpoint);
 
-    player.tweening = null;
+    if(player.tweening != null){
+      player.tweening.stop();
+      player.tweening = null;
+    };
+    
         player.tweening = scene.tweens.add({
         targets		: [ player ],
         x		: endpoint.x,
         y: endpoint.y,
         ease		: 'Linear',
-        duration	: 3000,
+        duration	: duration,
         yoyo		: false,
         repeat		: 0, // -1 for infinite repeats
-        onStart		: function () { console.log('onStart'); console.log(arguments); },
-        onComplete	: function () { console.log('onComplete'); console.log(arguments); },
+        onStart		: function () { 
+          console.log('onStart');
+          console.log(arguments); 
+          //player.anims.pause();
+          player.anims.play("misa-" + direction + "-walk", true); 
+        },
+        onComplete	: function () { 
+          console.log('onComplete'); 
+          console.log(arguments); 
+          //player.anims.stop();
+  
+          // If we were moving, pick and idle frame to use
+          if(!player.tweening.isPlaying()){
+            if (direction == "left") player.setTexture("atlas", "misa-left");
+            else if (direction == "right") player.setTexture("atlas", "misa-right");
+            else if (direction == "up") player.setTexture("atlas", "misa-back");
+            else if (direction == "down") player.setTexture("atlas", "misa-front");
+          }
+        },
         onYoyo		: function () { console.log('onYoyo'); console.log(arguments); },
-        onRepeat	: function () { console.log('onRepeat'); console.log(arguments); },
+        onRepeat	: function () { console.log('onRepeat'); console.log(arguments);},
         callbackScope	: scene
     });
 
