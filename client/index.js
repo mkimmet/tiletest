@@ -65,7 +65,6 @@ const config = {
     //let plugin = this.plugins.get('animatedTiles');
     //plugin.init(map);
     //console.log(this.plugin.get)
-    //another comment
     
     //this.sys.animatedTiles.init(map);
     // By default, everything gets depth sorted on the screen in the order we created things. Here, we
